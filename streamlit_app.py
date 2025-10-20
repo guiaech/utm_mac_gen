@@ -118,10 +118,9 @@ if st.button("🚀 Gerar Link UTM"):
             st.error(f"⚠️ Erro ao salvar no Google Sheets: {e}")
 
         # Exibe link com botão copiar (funcional nativo)
+        st.markdown("### 🔗 Seu link UTM — selecione e **copie** ←")
         st.code(utm_link, language="markdown")
-        st.button("📋 Copiar link", on_click=lambda: st.session_state.update({"copied": utm_link}))
-        if "copied" in st.session_state:
-            st.toast("✅ Link copiado para a área de transferência!", icon="📎")
+        st.caption("Dica: clique no código acima, ⌘/Ctrl + C para copiar.")
 
 # =========================
 # HISTÓRICO

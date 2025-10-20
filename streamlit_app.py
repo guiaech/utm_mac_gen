@@ -13,6 +13,7 @@ st.set_page_config(
     page_icon="🍍",
     layout="centered",
 )
+st.write("Secrets carregados:", list(st.secrets.keys()))
 
 # =========================
 # CONFIGURAR GOOGLE SHEETS

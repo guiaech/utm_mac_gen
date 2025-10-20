@@ -57,8 +57,17 @@ def validar_url(url):
     return bool(pattern.match(url))
 
 def limpar_texto(texto):
+    """
+    Limpa o texto e substitui caracteres inválidos por '-'.
+    Mantém apenas letras, números, hífens e underscores.
+    """
     texto = texto.strip().lower()
-    texto = re.sub(r'[^a-z0-9_-]', '', texto)
+    # Substitui espaços e caracteres especiais por '-'
+    texto = re.sub(r'[^a-z0-9_-]+', '-', texto)
+    # Remove múltiplos '-' seguidos
+    texto = re.sub(r'-{2,}', '-', texto)
+    # Remove hífen do início e fim (se houver)
+    texto = texto.strip('-')
     return texto
 
 # =========================

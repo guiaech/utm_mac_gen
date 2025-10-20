@@ -130,7 +130,8 @@ st.divider()
 st.subheader("🕓 Histórico de links gerados")
 
 if st.button("🔄 Recarregar histórico"):
-    st.experimental_rerun()
+    st.session_state["refresh"] = not st.session_state.get("refresh", False)
+    st.rerun()
 
 try:
     data = sheet.get_all_records()

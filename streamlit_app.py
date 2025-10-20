@@ -37,11 +37,15 @@ SHEET_NAME = st.secrets["sheets"]["sheet_name"]
 # CONEXÃO COM GOOGLE SHEETS
 # =========================
 try:
-    scope = ["https://www.googleapis.com/auth/spreadsheets"]
+    scope = [
+    "https://www.googleapis.com/auth/spreadsheets",
+    "https://www.googleapis.com/auth/drive",
+    ]
     creds = Credentials.from_service_account_info(
         st.secrets["gcp_service_account"], scopes=scope
     )
     client = gspread.authorize(creds)
+
     sheet = client.open(SHEET_NAME).worksheet("historico")
     st.success(f"✅ Conectado ao Google Sheets: **{SHEET_NAME}**")
 except Exception as e:

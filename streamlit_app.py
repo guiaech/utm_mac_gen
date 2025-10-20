@@ -12,27 +12,51 @@ st.set_page_config(
     page_title="Macfor UTM Builder 🍍",
     page_icon="🍍",
     layout="centered",
+    initial_sidebar_state="collapsed"
 )
-st.write("Secrets carregados:", list(st.secrets.keys()))
+
+st.markdown("""
+# 🍍 Macfor UTM Builder  
+**Crie, valide e salve seus links UTM diretamente no Google Sheets.**  
+Monte seus parâmetros, gere o link e tenha persistência real no histórico.
+""")
+st.divider()
 
 # =========================
-# CONFIGURAR GOOGLE SHEETS
+# VALIDAÇÃO DE SECRETS
 # =========================
-scope = ["https://www.googleapis.com/auth/spreadsheets"]
-creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
-client = gspread.authorize(creds)
-SHEET_NAME = st.secrets["sheet_name"]
-sheet = client.open(SHEET_NAME).worksheet("historico")
+required_sections = ["gcp_service_account", "sheets"]
+missing = [s for s in required_sections if s not in st.secrets]
+if missing:
+    st.error(f"❌ Segredos ausentes: {', '.join(missing)}. Configure-os em Settings → Secrets.")
+    st.stop()
+
+SHEET_NAME = st.secrets["sheets"]["sheet_name"]
 
 # =========================
-# FUNÇÕES AUXILIARES
+# CONEXÃO COM GOOGLE SHEETS
+# =========================
+try:
+    scope = ["https://www.googleapis.com/auth/spreadsheets"]
+    creds = Credentials.from_service_account_info(
+        st.secrets["gcp_service_account"], scopes=scope
+    )
+    client = gspread.authorize(creds)
+    sheet = client.open(SHEET_NAME).worksheet("historico")
+    st.success(f"✅ Conectado ao Google Sheets: **{SHEET_NAME}**")
+except Exception as e:
+    st.error(f"⚠️ Falha ao conectar ao Google Sheets: {e}")
+    st.stop()
+
+# =========================
+# FUNÇÕES DE VALIDAÇÃO
 # =========================
 def validar_url(url):
     pattern = re.compile(
-        r'^(https?:\/\/)'
-        r'([a-zA-Z0-9.-]+)'
-        r'(\.[a-zA-Z]{2,})'
-        r'(\/.*)?$'
+        r'^(https?:\/\/)'              
+        r'([a-zA-Z0-9.-]+)'            
+        r'(\.[a-zA-Z]{2,})'            
+        r'(\/.*)?$'                    
     )
     return bool(pattern.match(url))
 
@@ -41,30 +65,8 @@ def limpar_texto(texto):
     texto = re.sub(r'[^a-z0-9_-]', '', texto)
     return texto
 
-def carregar_historico():
-    dados = sheet.get_all_records()
-    return pd.DataFrame(dados)
-
-def salvar_no_google_sheets(nova_linha):
-    sheet.append_row(list(nova_linha.values()))
-
 # =========================
-# CABEÇALHO
-# =========================
-st.markdown("""
-# 🍍 Macfor UTM Builder  
-Crie, valide e salve seus links UTM com persistência no Google Sheets.
-""")
-st.divider()
-
-# =========================
-# CARREGAR HISTÓRICO
-# =========================
-if "history" not in st.session_state:
-    st.session_state.history = carregar_historico()
-
-# =========================
-# FORMULÁRIO
+# FORMULÁRIO PRINCIPAL
 # =========================
 st.subheader("🔧 Parâmetros UTM")
 
@@ -79,13 +81,13 @@ with col2:
     content = st.text_input("utm_content", placeholder="variação de anúncio opcional")
 
 # =========================
-# GERAR LINK
+# BOTÃO DE GERAÇÃO
 # =========================
 if st.button("🚀 Gerar Link UTM"):
     if not base_url or not source or not medium or not campaign:
         st.error("⚠️ Preencha todos os campos obrigatórios (*).")
     elif not validar_url(base_url):
-        st.error("❌ URL inválida. Ela deve começar com http:// ou https:// e ter um domínio válido.")
+        st.error("❌ URL inválida. Deve começar com http:// ou https:// e conter um domínio válido.")
     else:
         if not base_url.endswith("/"):
             base_url += "/"
@@ -108,49 +110,40 @@ if st.button("🚀 Gerar Link UTM"):
 
         utm_link = f"{base_url}?{urlencode(params)}"
 
-        novo_registro = {
-            "Base URL": base_url,
-            "UTM Source": source,
-            "UTM Medium": medium,
-            "UTM Campaign": campaign,
-            "UTM Term": term,
-            "UTM Content": content,
-            "Link Gerado": utm_link
-        }
+        # Adiciona ao Google Sheets
+        try:
+            sheet.append_row([base_url, source, medium, campaign, term, content, utm_link])
+            st.success("✅ Link salvo com sucesso no Google Sheets!")
+        except Exception as e:
+            st.error(f"⚠️ Erro ao salvar no Google Sheets: {e}")
 
-        # Salvar no Google Sheets
-        salvar_no_google_sheets(novo_registro)
-
-        # Atualizar histórico em memória
-        st.session_state.history = pd.concat(
-            [st.session_state.history, pd.DataFrame([novo_registro])],
-            ignore_index=True
-        )
-
-        st.success("✅ Link UTM gerado e salvo com sucesso no Google Sheets!")
         st.code(utm_link, language="markdown")
 
 # =========================
-# HISTÓRICO
+# VISUALIZAÇÃO DO HISTÓRICO
 # =========================
-if not st.session_state.history.empty:
-    st.divider()
-    st.subheader("🕓 Histórico de links gerados")
-    st.dataframe(st.session_state.history, use_container_width=True)
-
-    csv = st.session_state.history.to_csv(index=False).encode("utf-8")
-    st.download_button(
-        label="💾 Exportar histórico como CSV",
-        data=csv,
-        file_name="historico_macfor_utm.csv",
-        mime="text/csv"
-    )
+try:
+    data = sheet.get_all_records()
+    if data:
+        df = pd.DataFrame(data)
+        st.divider()
+        st.subheader("🕓 Histórico de links gerados")
+        st.dataframe(df, use_container_width=True)
+        csv = df.to_csv(index=False).encode("utf-8")
+        st.download_button(
+            label="💾 Exportar histórico como CSV",
+            data=csv,
+            file_name="historico_macfor_utm.csv",
+            mime="text/csv"
+        )
+except Exception as e:
+    st.warning("⚠️ Não foi possível carregar o histórico da planilha.")
 
 # =========================
 # RODAPÉ
 # =========================
 st.divider()
 st.markdown(
-    "<small style='color:gray;'>Feito com 🍍 por Guilherme — Macfor UTM Builder com Google Sheets</small>",
+    "<small style='color:gray;'>Feito com 🍍 por Guilherme — Macfor UTM Builder v4</small>",
     unsafe_allow_html=True
 )

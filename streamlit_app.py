@@ -16,9 +16,9 @@ st.set_page_config(
 )
 
 st.markdown("""
-# 🍍 Macfor UTM Builder  
-**Crie, valide e salve seus links UTM diretamente no Google Sheets.**  
-Monte seus parâmetros, gere o link e tenha persistência real no histórico.
+# 🍍 Macfor UTM Builder PRO  
+**Crie, valide e salve seus links UTM com persistência no Google Sheets.**  
+Mais automação, mais controle e 100% estilo Macfor.
 """)
 st.divider()
 
@@ -38,14 +38,13 @@ SHEET_NAME = st.secrets["sheets"]["sheet_name"]
 # =========================
 try:
     scope = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive",
     ]
     creds = Credentials.from_service_account_info(
         st.secrets["gcp_service_account"], scopes=scope
     )
     client = gspread.authorize(creds)
-
     sheet = client.open(SHEET_NAME).worksheet("historico")
     st.success(f"✅ Conectado ao Google Sheets: **{SHEET_NAME}**")
 except Exception as e:
@@ -69,6 +68,19 @@ def limpar_texto(texto):
     texto = re.sub(r'[^a-z0-9_-]', '', texto)
     return texto
 
+def copiar_link_script():
+    return """
+    <script>
+    function copiarLink(id) {
+        const text = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(text);
+        const btn = document.getElementById(id + "_btn");
+        btn.innerText = "✅ Copiado!";
+        setTimeout(() => { btn.innerText = "📋 Copiar"; }, 2000);
+    }
+    </script>
+    """
+
 # =========================
 # FORMULÁRIO PRINCIPAL
 # =========================
@@ -80,7 +92,7 @@ with col1:
     source = st.text_input("utm_source*", placeholder="google, newsletter...")
     medium = st.text_input("utm_medium*", placeholder="cpc, email...")
 with col2:
-    campaign = st.text_input("utm_campaign*", placeholder="promo_outubro, black_friday...")
+    campaign = st.text_input("utm_campaign*", placeholder="macfor_campanha_exemplo")
     term = st.text_input("utm_term", placeholder="palavra-chave opcional")
     content = st.text_input("utm_content", placeholder="variação de anúncio opcional")
 
@@ -92,6 +104,8 @@ if st.button("🚀 Gerar Link UTM"):
         st.error("⚠️ Preencha todos os campos obrigatórios (*).")
     elif not validar_url(base_url):
         st.error("❌ URL inválida. Deve começar com http:// ou https:// e conter um domínio válido.")
+    elif "macfor" not in campaign.lower():
+        st.warning("⚠️ A campanha deve conter 'macfor' no nome. Ajuste e tente novamente.")
     else:
         if not base_url.endswith("/"):
             base_url += "/"
@@ -121,17 +135,28 @@ if st.button("🚀 Gerar Link UTM"):
         except Exception as e:
             st.error(f"⚠️ Erro ao salvar no Google Sheets: {e}")
 
-        st.code(utm_link, language="markdown")
+        # Exibe o link com botão copiar
+        st.markdown(copiar_link_script(), unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style='display:flex; align-items:center; gap:10px;'>
+            <code id="utm_link">{utm_link}</code>
+            <button id="utm_link_btn" onclick="copiarLink('utm_link')" style="border:none; background-color:#4CAF50; color:white; padding:5px 10px; border-radius:6px; cursor:pointer;">📋 Copiar</button>
+        </div>
+        """, unsafe_allow_html=True)
 
 # =========================
 # VISUALIZAÇÃO DO HISTÓRICO
 # =========================
+st.divider()
+st.subheader("🕓 Histórico de links gerados")
+
+if st.button("🔄 Recarregar histórico"):
+    st.experimental_rerun()
+
 try:
     data = sheet.get_all_records()
     if data:
-        df = pd.DataFrame(data)
-        st.divider()
-        st.subheader("🕓 Histórico de links gerados")
+        df = pd.DataFrame(data).tail(100)  # mostra os últimos 100
         st.dataframe(df, use_container_width=True)
         csv = df.to_csv(index=False).encode("utf-8")
         st.download_button(
@@ -140,14 +165,16 @@ try:
             file_name="historico_macfor_utm.csv",
             mime="text/csv"
         )
+    else:
+        st.info("Nenhum link gerado ainda.")
 except Exception as e:
-    st.warning("⚠️ Não foi possível carregar o histórico da planilha.")
+    st.warning(f"⚠️ Não foi possível carregar o histórico da planilha. {e}")
 
 # =========================
 # RODAPÉ
 # =========================
 st.divider()
 st.markdown(
-    "<small style='color:gray;'>Feito com 🍍 por Guilherme — Macfor UTM Builder v4</small>",
+    "<small style='color:gray;'>Feito com 🍍 por Guilherme — Macfor UTM Builder PRO v5</small>",
     unsafe_allow_html=True
 )

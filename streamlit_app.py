@@ -46,7 +46,6 @@ try:
     )
     client = gspread.authorize(creds)
     sheet = client.open(SHEET_NAME).worksheet("historico")
-    st.success(f"✅ Conectado ao Google Sheets: **{SHEET_NAME}**")
 except Exception as e:
     st.error(f"⚠️ Falha ao conectar ao Google Sheets: {e}")
     st.stop()

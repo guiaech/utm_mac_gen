@@ -17,7 +17,7 @@ st.set_page_config(
 
 st.markdown("""
 # 🍍 Macfor UTM Builder PRO  
-**Crie, valide e salve seus links UTM com persistência no Google Sheets.**
+**Crie, valide e salve seus links UTM.**
 """)
 st.divider()
 
@@ -163,6 +163,6 @@ except Exception as e:
 # =========================
 st.divider()
 st.markdown(
-    "<small style='color:gray;'>Feito com 🍍 por Guilherme — Macfor UTM Builder PRO v6</small>",
+    "<small style='color:gray;'>Feito com 🍍Macfor UTM Builder PRO</small>",
     unsafe_allow_html=True
 )

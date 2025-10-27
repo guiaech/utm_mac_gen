@@ -71,6 +71,20 @@ def limpar_texto(texto):
     return texto
 
 # =========================
+# LISTAS PADRONIZADAS
+# =========================
+plataformas = [
+    "adsplay", "google", "linkedin", "meta", "tiktok",
+    "twitter", "audio", "facebook", "instagram"
+]
+
+midias = [
+    "cpa", "cpc", "cpi", "cpm", "cpr", "lc", "mva",
+    "mvao", "mvo", "mxcon", "pimp", "roas", "uni",
+    "cpe", "cpv", "social", "offline"
+]
+
+# =========================
 # FORMULÁRIO PRINCIPAL
 # =========================
 st.subheader("🔧 Parâmetros UTM")
@@ -78,8 +92,9 @@ st.subheader("🔧 Parâmetros UTM")
 col1, col2 = st.columns(2)
 with col1:
     base_url = st.text_input("URL base*", placeholder="https://www.exemplo.com/")
-    source = st.text_input("utm_source*", placeholder="google, newsletter...")
-    medium = st.text_input("utm_medium*", placeholder="cpc, email...")
+    source = st.selectbox("utm_source*", plataformas, index=None, placeholder="Selecione a plataforma")
+    medium = st.selectbox("utm_medium*", midias, index=None, placeholder="Selecione a mídia")
+
 with col2:
     campaign = st.text_input("utm_campaign*", placeholder="macfor_campanha_exemplo")
     term = st.text_input("utm_term", placeholder="palavra-chave opcional")
@@ -103,7 +118,7 @@ if st.button("🚀 Gerar Link UTM"):
         term = limpar_texto(term)
         content = limpar_texto(content)
 
-        # Garantir que 'macfor' esteja no nome da campanha
+        # Garante que 'macfor' esteja no nome da campanha
         if "macfor" not in campaign:
             campaign = f"macfor_{campaign}"
 
@@ -126,10 +141,10 @@ if st.button("🚀 Gerar Link UTM"):
         except Exception as e:
             st.error(f"⚠️ Erro ao salvar no Google Sheets: {e}")
 
-        # Exibe link com botão copiar (funcional nativo)
+        # Exibe o link com instrução de cópia
         st.markdown("### 🔗 Seu link UTM — selecione e **copie** ←")
         st.code(utm_link, language="markdown")
-        st.caption("Dica: clique no código acima, ⌘/Ctrl + C para copiar.")
+        st.caption("Dica: clique no código acima e use ⌘/Ctrl + C para copiar.")
 
 # =========================
 # HISTÓRICO
@@ -163,6 +178,6 @@ except Exception as e:
 # =========================
 st.divider()
 st.markdown(
-    "<small style='color:gray;'>Feito com 🍍Macfor UTM Builder PRO</small>",
+    "<small style='color:gray;'>Feito com 🍍 Macfor UTM Builder PRO v9</small>",
     unsafe_allow_html=True
 )
